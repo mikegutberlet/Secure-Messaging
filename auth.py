@@ -12,7 +12,7 @@ import logging
 
 
 
-class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
+class LoginHandler(BaseHandler, tornado.auth.GoogleOAuth2Mixin):
     """
     Handler for logins with Google Open ID / OAuth
     http://www.tornadoweb.org/documentation/auth.html#google
@@ -38,7 +38,7 @@ class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
                 self.render_default("index.html", content=content)
             # If user has not filled in all fields.
             if not user["email"] or not user["name"]:
-                content = ('<h2>2. Direct Login</h2>' 
+                content = ('<h2>2. Direct Login</h2>'
                 + '<p>Fill in both fields!</p>'
                 + '<form class="form-inline" action="/login" method="get"> '
                 + '<input type="hidden" name="start_direct_auth" value="1">'
@@ -50,16 +50,16 @@ class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
             # All data given. Log user in!
             else:
                 self._on_auth(user)
-            
+
         else:
             # Logins.
             content = '<div class="page-header"><h1>Login</h1></div>'
-            content += ('<h2>1. Google Login</h2>' 
-            + '<form action="/login" method="get">' 
+            content += ('<h2>1. Google Login</h2>'
+            + '<form action="/login" method="get">'
             + '<input type="hidden" name="start_google_oauth" value="1">'
             + '<input type="submit" class="btn" value="Sign in with Google">'
             + '</form>')
-            content += ('<h2>2. Direct Login</h2>' 
+            content += ('<h2>2. Direct Login</h2>'
             + '<form class="form-inline" action="/login" method="get"> '
             + '<input type="hidden" name="start_direct_auth" value="1">'
             + '<input class="form-control" type="text" name="name" placeholder="Your Name"> '
@@ -74,14 +74,14 @@ class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
         """
         if not user:
             content = ('<div class="page-header"><h1>Login</h1></div>'
-            + '<div class="alert alert-error">' 
+            + '<div class="alert alert-error">'
             + '<button class="close" data-dismiss="alert">×</button>'
             + '<h3>Authentication failed</h3>'
             + '<p>This might be due to a problem in Tornados GoogleMixin.</p>'
             + '</div>')
             self.render_default("index.html", content=content)
             return None
-        
+
         # @todo: Validate user data.
         # Save user when authentication was successful.
         def on_user_find(result, user=user):
@@ -96,7 +96,7 @@ class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
                 dbuser.update(user)
                 user = dbuser
                 self.application.client.set("user:" + user["email"], tornado.escape.json_encode(user))
-            
+
             # Save user id in cookie.
             self.set_secure_cookie("user", user["email"])
             self.application.usernames[user["email"]] = user.get("name") or user["email"]
@@ -105,15 +105,13 @@ class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
                 logging.warning("Waiter disappeared")
                 return
             self.redirect("/")
-        
+
         dbuser = self.application.client.get("user:" + user["email"], on_user_find)
-        
-        
+
+
 
 
 class LogoutHandler(BaseHandler):
     def get(self):
         self.clear_cookie('user')
         self.redirect("/")
-        
-    
